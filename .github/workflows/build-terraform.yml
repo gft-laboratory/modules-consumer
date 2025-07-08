@@ -1,6 +1,6 @@
 ---
 # Pipeline principal para build e deploy com Terraform
-name: '02-deploy_terraform'
+name: 'deploy_terraform'
 
 on:
   workflow_dispatch:
