@@ -1,0 +1,64 @@
+# Pipeline para build e deploy de imagem no ECR
+name: '01-build-image'
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - "main"
+  #     - "develop"
+  #     - "features/**"
+  # pull_request:
+
+env:
+  AWS_REGION: "us-east-2"
+  DOCKERFILE_PATH: "docker/dockerfile-python3.9"
+  ECR_REPO: "hdi-datalaker"
+  IMAGE_TAG: "latest"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-push-image:
+    name: 'Build e Push da Imagem Docker'
+    runs-on: gft-hosted
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+      
+      - name: Setup Docker Buildx Manual
+        run: |
+          sudo mkdir -p /usr/lib/docker/cli-plugins
+          sudo curl -sSL https://github.com/docker/buildx/releases/latest/download/buildx-linux-amd64 -o /usr/lib/docker/cli-plugins/docker-buildx
+          sudo chmod +x /usr/lib/docker/cli-plugins/docker-buildx
+
+      - name: Login no Amazon ECR
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+      
+      - name: Iniciar Docker se caso necessário
+        run: |
+          if ! pgrep dockerd; then
+            echo "Iniciando o daemon Docker..."
+            sudo systemctl start docker
+            sudo systemctl status docker
+          else
+            sudo systemctl status docker
+            echo "Docker já está rodando."
+          fi
+          
+      - name: Build da Imagem Docker
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          sudo docker build \
+            -f "$DOCKERFILE_PATH" \
+            -t "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG" \
+            .
+
+      - name: Push da Imagem Docker
+        run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+          sudo docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"

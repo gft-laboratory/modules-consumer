@@ -1,0 +1,231 @@
+---
+# Pipeline principal para build e deploy com Terraform
+name: '02-deploy_terraform'
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - "main"
+  #     - "develop"
+  #     - "features/**"
+  # pull_request:
+
+env:
+  AWS_REGION: "us-east-2"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+
+# Job 1 - Setup inicial (instalação do Terraform + substituição do token no source)
+  setup-and-installation:
+    name: 'setup and installation'
+    runs-on: gft-hosted
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Faz checkout do repositório para o runner
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      # Configura credenciais Git (método SSH)
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Verificar conexão SSH com GitHub
+        run: |
+          echo "Conteúdo do ~/.ssh:"
+          ls -l ~/.ssh
+          echo "Testando conexão com GitHub..."
+          ssh -vT git@github.com || echo "Falha de conexão SSH"
+            
+      # Instala Terraform CLI (sem token do Terraform Cloud, pois não está sendo usado)
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+
+# Job 2 - Formatação e lint com Terraform
+  checking-syntax:
+    name: 'Validate Structure and Fix'
+    runs-on: gft-hosted
+    needs: [setup-and-installation]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkout do código para a branch atual
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Configura credenciais Git (método SSH)
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      # Inicializa o Terraform para carregar módulos e backend (necessário antes de fmt)
+      - name: Terraform Init
+        run: terraform init -upgrade
+
+      # Executa o terraform fmt para validar e padronizar a formatação do código
+      - name: Terraform Format
+        run: terraform fmt
+
+
+# Job 3 - Validação sintática do código Terraform
+  validate-syntax:
+    name: 'Validate syntax'
+    runs-on: gft-hosted
+    needs: [setup-and-installation]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkout do código para a branch atual
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Configura credenciais Git (método SSH)
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          # Teste de conexão
+          ssh -T git@github.com || true
+
+      # Inicializa o Terraform para carregar módulos e backend (necessário antes de fmt)
+      - name: Terraform Init
+        run: terraform init -upgrade
+
+      # Executa o terraform validate para validar se a configuração está sintaticamente correta
+      - name: Terraform Validate
+        run: terraform validate
+
+
+# Job 4 - Verificação de segurança com Checkov
+  checkov-security-scan:
+    name: 'Checkov Security Scan'
+    runs-on: gft-hosted
+    needs: [setup-and-installation, checking-syntax, validate-syntax]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Checkout do código
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Instala dependências Python e cria ambiente virtual
+      - name: Install pip and Checkov
+        run: |
+          echo "Atualizando pacotes e instalando dependências do Python..."
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3.12-venv
+
+          echo "Criando ambiente virtual..."
+          python3 -m venv .venv
+          source .venv/bin/activate
+
+          echo "Instalando Checkov..."
+          pip install --upgrade pip
+          pip install checkov
+
+          echo "Verificando versão do Checkov instalada..."
+          checkov --version
+          
+      # Executa o Checkov para escanear todos os diretórios por boas práticas de segurança
+      - name: Run Checkov Scan
+        run: |
+          source .venv/bin/activate
+          checkov -d .
+
+
+# Job 5 - Execução do Terraform Plan + Apply (somente na main via push)
+  terraform:
+    name: 'Plan and Apply code'
+    runs-on: gft-hosted
+    needs: [validate-syntax, checking-syntax, checkov-security-scan]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Limpa o cache do Terraform se existir
+      - name: Clear Terraform Cache
+        run: |
+          if [ -d ".terraform" ]; then
+            echo "Cleaning Terraform cache..."
+            rm -rf .terraform
+          fi
+
+      # Checkout do código para a branch atual
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Setup do Terraform (garante binário disponível)
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      # Configura credenciais Git (método SSH)
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s\n" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          # Teste de conexão
+          ssh -T git@github.com || true
+
+      # Inicializa o Terraform (carrega remote backend e módulos)
+      - name: Terraform Init
+        run: terraform init
+
+      # Verificar o caminho que está para ocorrer o deploy
+      - name: Check current directory
+        run: pwd
+
+      # Prepara o deploy lambda convertendo o arquivo .py em .zip
+      - name: Prepare Lambda ZIP
+        run: |
+          echo "Instalando pacote zip"
+          sudo apt-get update && sudo apt-get install -y zip
+          echo "Pacote zip instalado com sucesso"
+          cd lambda_file/
+          zip lambda_function.zip lambda_function.py
+
+      # Lista arquivos do workspace para debug (útil em ambientes customizados)
+      - name: Debug - Listando arquivos para deploy
+        run: |
+          echo "🔎 Verificando existência do lambda_function.py e preparando listagem."
+          if [ -f "lambda_file/lambda_function.py" ]; then
+            echo "✅ Arquivo lambda_function.py encontrado!"
+            echo "📦 Verificando arquivos .zip gerados."
+            find . -name "*.zip" -exec ls -lh {} \;
+          else
+            echo "❌ Arquivo lambda_function.py não encontrado em ../lambda_file/"
+            echo "🚫 O deploy do Lambda não poderá continuar."
+            exit 1
+          fi
+
+      # Executa o Terraform Plan para visualizar alterações
+      - name: Terraform Plan
+        run: terraform plan
+
+      # Aplica as mudanças automaticamente (sem prompt)
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
