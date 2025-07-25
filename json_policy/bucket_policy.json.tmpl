@@ -1,0 +1,25 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+              "glue.amazonaws.com",
+              "lakeformation.amazonaws.com",
+              "redshift.amazonaws.com",
+              "dms.amazonaws.com",
+              "dynamodb.amazonaws.com",
+              "lambda.amazonaws.com",
+              "sagemaker.amazonaws.com",
+              "s3.amazonaws.com"
+         ]
+        },    
+        "Action": "s3:*",
+        "Resource": [
+          "${bucket_arn}",
+          "${bucket_arn}/*" 
+        ]
+      }
+    ]
+  }

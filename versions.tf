@@ -9,8 +9,8 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "hdi-tfstate-project"
-    key            = "module-data/terraform_hdi.tfstate"
+    bucket         = "lab-tfstate-project"
+    key            = "module-data/terraform_lab.tfstate"
     region         = "us-east-2"
     dynamodb_table = "terraform_locks"
   }

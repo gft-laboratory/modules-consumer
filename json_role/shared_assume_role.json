@@ -5,10 +5,7 @@
       "Effect": "Allow",
       "Principal": {
         "Service": [
-          "lambda.amazonaws.com",
-          "glue.amazonaws.com",
-          "sagemaker.amazonaws.com",
-          "events.amazonaws.com"
+          "glue.amazonaws.com"
         ]
       },
       "Action": "sts:AssumeRole"

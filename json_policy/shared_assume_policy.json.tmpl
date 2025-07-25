@@ -1,0 +1,173 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LakeFormationAccess",
+      "Effect": "Allow",
+      "Action": [
+        "lakeformation:GetDataAccess"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LambdaAccess",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "IAMPassRole",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "GlueAccess",
+      "Effect": "Allow",
+      "Action": [
+        "glue:SearchTables",
+        "glue:BatchCreatePartition",
+        "glue:CreatePartitionIndex",
+        "glue:DeleteDatabase",
+        "glue:GetTableVersions",
+        "glue:GetPartitions",
+        "glue:DeleteTableVersion",
+        "glue:UpdateTable",
+        "glue:DeleteTable",
+        "glue:DeletePartitionIndex",
+        "glue:GetTableVersion",
+        "glue:UpdateColumnStatisticsForTable",
+        "glue:CreatePartition",
+        "glue:UpdateDatabase",
+        "glue:CreateTable",
+        "glue:GetTables",
+        "glue:GetDatabases",
+        "glue:GetTable",
+        "glue:GetDatabase",
+        "glue:GetPartition",
+        "glue:UpdateColumnStatisticsForPartition",
+        "glue:CreateDatabase",
+        "glue:BatchDeleteTableVersion",
+        "glue:BatchDeleteTable",
+        "glue:DeletePartition",
+        "glue:GetUserDefinedFunctions",
+        "glue:TagResource",
+        "glue:GetDataQuality*",
+        "glue:ListDataQuality*",
+        "glue:CancelDataQuality*",
+        "glue:DeleteDataQuality*",
+        "glue:PublishDataQuality*",
+        "glue:StartDataQuality*",
+        "glue:UpdateDataQuality*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "KMSAccess",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:GenerateDataKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsManagerAccess",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:ListSecrets",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": [
+        "${secretmanager_shared_arn}",
+        "${secretmanager_shared_arn}/*"
+      ]
+    },
+    {
+      "Sid": "S3Access",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionAcl",
+        "s3:PutObjectVersionTagging",
+        "s3:Get*",
+        "s3:DeleteObject",
+        "s3:DeleteObjectTagging",
+        "s3:DeleteObjectVersion",
+        "s3:DeleteObjectVersionTagging",
+        "s3:Create*",
+        "s3:List*",
+        "s3:TagResource",
+        "s3:UntagResource"
+      ],
+      "Resource": [
+        "${bucket_arn}",
+        "${bucket_arn}/*"
+      ]
+    },
+    {
+      "Sid": "EC2Access",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeSubnets",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeVpcEndpoints",
+        "ec2:CreateNetworkInterfacePermission",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:CreateNetworkInterface",
+        "ec2:DeleteNetworkInterface",
+        "ec2:DescribeInstances",
+        "ec2:AttachNetworkInterface",
+        "ec2:ModifyNetworkInterfaceAttribute",
+        "ec2:ResetNetworkInterfaceAttribute",
+        "ec2:DetachNetworkInterface",
+        "ec2:DeleteNetworkInterfacePermission",
+        "ec2:CreateTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AthenaAccess",
+      "Effect": "Allow",
+      "Action": [
+        "athena:GetTableMetadata",
+        "athena:StartQueryExecution",
+        "athena:GetQueryResults"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DynamoDBAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:PutItem"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchLogsAccess",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:CreateLogGroup",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
